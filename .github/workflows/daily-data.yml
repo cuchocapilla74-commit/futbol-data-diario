@@ -1,0 +1,35 @@
+name: Build daily football JSON
+
+on:
+  schedule:
+    - cron: "10 3 * * *"   # 03:10 UTC cada día
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Clone source dataset (CSV, CC0)
+        run: |
+          rm -rf source
+          git clone --depth 1 https://github.com/footballcsv/espana.git source
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build JSON
+        run: |
+          python build_json.py
+
+      - name: Commit & push outputs
+        run: |
+          git config user.name "daily-bot"
+          git config user.email "daily-bot@users.noreply.github.com"
+          git add public-data/*.json
+          git commit -m "Daily data update" || echo "No changes"
+          git push
